@@ -6,9 +6,13 @@
           <el-button slot="append" icon="el-icon-search"></el-button> </el-input
       ></el-col>
       <el-col :span="12">
-        <el-button type="primary" size="small" style="margin-left: 100px;">新增</el-button>
+        <el-button type="primary" size="small" style="margin-left: 100px;"
+          >新增</el-button
+        >
         <el-button type="primary" size="small">导入</el-button>
-        <el-button type="primary" size="small">导出</el-button>
+        <el-button type="primary" size="small" @click="exportExcel"
+          >导出</el-button
+        >
       </el-col>
     </el-row>
     <el-table
@@ -20,6 +24,7 @@
       highlight-current-row
       :height="clientHeight"
       :header-cell-style="{ background: '#eef1f6', color: '#000' }"
+      id="OutTable"
     >
       <el-table-column align="center" label="序号" width="50" fixed>
         <template slot-scope="scope">
@@ -265,7 +270,8 @@
 
 <script>
 import { getList } from "@/api/table";
-
+import FileSaver from "file-saver";
+import XLSX from "xlsx";
 export default {
   filters: {
     statusFilter(status) {
@@ -321,6 +327,33 @@ export default {
         this.list = response.data.items;
         this.listLoading = false;
       });
+    },
+    exportExcel() {
+      let fix = document.querySelector(".el-table__fixed");
+      let wb;
+      if (fix) {
+        //判断要导出的节点中是否有fixed的表格，如果有，转换excel时先将该dom移除，然后append回去
+        wb = XLSX.utils.table_to_book(
+          document.querySelector("#OutTable").removeChild(fix)
+        );
+        document.querySelector("#OutTable").appendChild(fix);
+      } else {
+        wb = XLSX.utils.table_to_book(document.querySelector("#OutTable"));
+      }
+      let wbout = XLSX.write(wb, {
+        bookType: "xlsx",
+        bookSST: true,
+        type: "array"
+      });
+      try {
+        FileSaver.saveAs(
+          new Blob([wbout], { type: "application/octet-stream" }),
+          "demo.xlsx"
+        );
+      } catch (e) {
+        if (typeof console !== "undefined") console.log(e, wbout);
+      }
+      return wbout;
     }
   },
   computed: {
